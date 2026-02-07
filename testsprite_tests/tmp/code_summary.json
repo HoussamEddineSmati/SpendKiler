@@ -1,0 +1,20 @@
+{
+  "project_name": "BadgetApp",
+  "tech_stacks": [
+    "Expo",
+    "React Native",
+    "TypeScript",
+    "expo-sqlite",
+    "zustand",
+    "expo-notifications",
+    "react-native-chart-kit"
+  ],
+  "features": [
+    "Local SQLite storage",
+    "Expense and Income tracking",
+    "Monthly budget cycles",
+    "Category breakdown charts",
+    "Offline daily notifications",
+    "Theme support (Light/Dark)"
+  ]
+}

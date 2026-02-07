@@ -1,0 +1,12 @@
+{
+  "status": "init",
+  "executionArgs": {
+    "projectName": "BadgetApp",
+    "projectPath": "d:\\Project\\BadgetApp",
+    "testIds": [],
+    "additionalInstruction": "Imports have been fixed using '@/' path aliases. Verify that all tabs and screens load correctly without relative path resolution errors. Check for any UI inconsistencies in the dark theme.",
+    "envs": {
+      "API_KEY": "sk-user-OF51gNlB8OvGLikGBf2TcFE6Ml6gzj7vIRI42f7VGexjSqhnorBiIPSEe594haUEbPwyXa_5FziOvMVW7viaSic_1OmQDUunQE2BluI4rGGyBe9Yzbv3-Ipw2Q1OD_oRhSI"
+    }
+  }
+}
