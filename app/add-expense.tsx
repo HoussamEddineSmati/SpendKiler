@@ -215,7 +215,7 @@ const styles = StyleSheet.create({
     amountInput: { fontSize: 52, fontWeight: '300', minWidth: 120, textAlign: 'center' },
     section: { marginBottom: 28 },
     sectionTitle: { fontSize: 11, fontWeight: '700', letterSpacing: 1.5, marginBottom: 14, marginLeft: 4 },
-    categoriesGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+    categoriesGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 25, justifyContent: 'center' },
     categoryItem: { width: '23%', aspectRatio: 1, borderRadius: 16, justifyContent: 'center', alignItems: 'center', borderWidth: 1 },
     categoryIconWrapper: { width: 40, height: 40, borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginBottom: 8 },
     categoryLabel: { fontSize: 11, fontWeight: '600' },
