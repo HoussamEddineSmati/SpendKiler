@@ -123,7 +123,7 @@ const styles = StyleSheet.create({
     top: -24,
     justifyContent: 'center',
     alignItems: 'center',
-    width: 60,
+    flex: 1,
   },
   fab: {
     width: 58,

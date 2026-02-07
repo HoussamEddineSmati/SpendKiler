@@ -1,13 +1,16 @@
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { Bell, ChevronDown, Edit3, Menu, Plus, Settings as SettingsIcon } from 'lucide-react-native';
+import { Bell, ChevronDown, Edit3, Menu, Plus, Settings as SettingsIcon, X } from 'lucide-react-native';
 import React, { useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Modal, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Svg, { Circle, Defs, Stop, LinearGradient as SvgLinearGradient } from 'react-native-svg';
 
 import { useTheme } from '@/context/ThemeContext';
 import { useMainStore } from '@/src/store/useMainStore';
 import { filterExpensesByCycle, getCurrentCycleDates } from '@/src/utils/cycleUtils';
+import { requestNotificationPermissions } from '@/src/utils/notificationUtils';
+import * as Notifications from 'expo-notifications';
 
 // Circular Progress Component
 const CircularProgressRing = ({
@@ -82,6 +85,9 @@ export default function HomeScreen() {
   const { expenses, settings, isLoading } = useMainStore();
   const { colors, isDark } = useTheme();
   const [sortByValue, setSortByValue] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [notificationTime, setNotificationTime] = useState(new Date());
+  const [showTimeDisplay, setShowTimeDisplay] = useState(false);
 
   const cycleData = useMemo(() => {
     const { start, end } = getCurrentCycleDates(settings.cycleStartDay);
@@ -140,7 +146,22 @@ export default function HomeScreen() {
         <TouchableOpacity style={[styles.navButton, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)' }]}>
           <Menu size={24} color={colors.icon} strokeWidth={1.5} />
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.navButton, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)' }]}>
+        <TouchableOpacity
+          style={[styles.navButton, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)' }]}
+          onPress={async () => {
+            const hasPermission = await requestNotificationPermissions();
+            if (hasPermission) {
+              setShowTimePicker(true);
+              setShowTimeDisplay(true);
+            } else {
+              Alert.alert(
+                'Permission Required',
+                'Please enable notifications in your device settings to set reminders.',
+                [{ text: 'OK' }]
+              );
+            }
+          }}
+        >
           <Bell size={24} color={colors.icon} strokeWidth={1.5} />
         </TouchableOpacity>
       </View>
@@ -237,8 +258,120 @@ export default function HomeScreen() {
 
         <View style={{ height: 120 }} />
       </ScrollView>
+
+      {/* Time Picker Modal */}
+      <Modal
+        visible={showTimeDisplay}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowTimeDisplay(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>Set Daily Reminder</Text>
+              <TouchableOpacity onPress={() => setShowTimeDisplay(false)}>
+                <X size={24} color={colors.textMuted} />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={[styles.modalDescription, { color: colors.textMuted }]}>
+              Choose a time to receive daily expense reminders
+            </Text>
+
+            {Platform.OS === 'ios' && (
+              <View style={styles.timePickerContainer}>
+                <DateTimePicker
+                  value={notificationTime}
+                  mode="time"
+                  display="spinner"
+                  onChange={(event, selectedTime) => {
+                    if (selectedTime) {
+                      setNotificationTime(selectedTime);
+                    }
+                  }}
+                  textColor={colors.text}
+                />
+              </View>
+            )}
+
+            {Platform.OS === 'android' && showTimePicker && (
+              <DateTimePicker
+                value={notificationTime}
+                mode="time"
+                is24Hour={false}
+                onChange={async (event, selectedTime) => {
+                  setShowTimePicker(false);
+                  if (event.type === 'set' && selectedTime) {
+                    setNotificationTime(selectedTime);
+                    await scheduleNotification(selectedTime);
+                    Alert.alert(
+                      'Reminder Set',
+                      `You'll receive daily reminders at ${selectedTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}`,
+                      [{ text: 'OK', onPress: () => setShowTimeDisplay(false) }]
+                    );
+                  } else {
+                    setShowTimeDisplay(false);
+                  }
+                }}
+              />
+            )}
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelButton, { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' }]}
+                onPress={() => setShowTimeDisplay(false)}
+              >
+                <Text style={[styles.buttonText, { color: colors.textSecondary }]}>Cancel</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.modalButton, styles.confirmButton, { backgroundColor: colors.accent }]}
+                onPress={async () => {
+                  await scheduleNotification(notificationTime);
+                  Alert.alert(
+                    'Reminder Set',
+                    `You'll receive daily reminders at ${notificationTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}`,
+                    [{ text: 'OK' }]
+                  );
+                  setShowTimeDisplay(false);
+                }}
+              >
+                <Text style={[styles.buttonText, { color: '#FFFFFF' }]}>Set Reminder</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ContentWrapper>
   );
+
+  async function scheduleNotification(time: Date) {
+    if (Platform.OS === 'web') return;
+
+    try {
+      await Notifications.cancelAllScheduledNotificationsAsync();
+
+      const hours = time.getHours();
+      const minutes = time.getMinutes();
+
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: "Daily Expense Reminder 💰",
+          body: "Don't forget to log your expenses for today!",
+          sound: true,
+        },
+        trigger: {
+          type: Notifications.SchedulableTriggerInputTypes.DAILY,
+          hour: hours,
+          minute: minutes,
+        },
+      });
+    } catch (error) {
+      console.error('Error scheduling notification:', error);
+      Alert.alert('Error', 'Failed to schedule notification. Please try again.');
+    }
+  }
 }
 
 const styles = StyleSheet.create({
@@ -443,5 +576,63 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 14,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    width: '100%',
+    maxWidth: 400,
+    borderRadius: 24,
+    padding: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+  },
+  modalDescription: {
+    fontSize: 14,
+    marginBottom: 24,
+    lineHeight: 20,
+  },
+  timePickerContainer: {
+    marginBottom: 24,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 24,
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cancelButton: {
+    // Additional styles if needed
+  },
+  confirmButton: {
+    // Additional styles if needed
+  },
+  buttonText: {
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

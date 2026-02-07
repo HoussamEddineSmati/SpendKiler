@@ -9,19 +9,26 @@ dist/
 web-build/
 expo-env.d.ts
 
+# EAS
+*.easignore
+
+# Native generated folders
+/ios/
+/android/
+
 # Native
-.kotlin/
 *.orig.*
 *.jks
 *.p8
 *.p12
 *.key
 *.mobileprovision
+*.cer
 
 # Metro
 .metro-health-check*
 
-# debug
+# Debug
 npm-debug.*
 yarn-debug.*
 yarn-error.*
@@ -30,14 +37,56 @@ yarn-error.*
 .DS_Store
 *.pem
 
-# local env files
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Linux
+*~
+
+# Local env files
+.env
+.env.*
 .env*.local
 
-# typescript
+# TypeScript
 *.tsbuildinfo
 
-app-example
+# Testing
+coverage/
 
-# generated native folders
-/ios
-/android
+# Editor directories and files
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*.swp
+*.swo
+
+# Kotlin
+.kotlin/
+
+# Gradle
+.gradle/
+
+# Fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots
+fastlane/test_output
+
+# Bundle artifacts
+*.jsbundle
+
+# CocoaPods
+Pods/
+
+# Temporary files
+*.log
+*.tmp
+
+# Expo example app
+app-example/
